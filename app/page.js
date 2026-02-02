@@ -46,6 +46,9 @@ export default function Home() {
   const [attempts, setAttempts] = useState(0);
   const [accepted, setAccepted] = useState(false);
   const [message, setMessage] = useState('');
+  // New states
+  const [toasts, setToasts] = useState([]);
+  const [yesScale, setYesScale] = useState(1);
   const [patience, setPatience] = useState(5);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -67,6 +70,15 @@ export default function Home() {
   ];
 
   const emojis = ['💖', '💘', '💌', '🥰', '💕', '💓'];
+
+  // Toast System
+  const addToast = (msg) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, msg }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 2000);
+  };
 
   // Sound Effects using Web Audio API
   const playSound = (type) => {
@@ -131,18 +143,26 @@ export default function Home() {
 
       setIsMoving(true);
 
-      // Smart positioning: avoid edges
-      const btnWidth = btnRef.current ? btnRef.current.offsetWidth : 150;
-      const btnHeight = btnRef.current ? btnRef.current.offsetHeight : 60;
+      // Smart positioning: avoid edges and account for scale
+      // Note: offsetWidth is unscaled. We need to account for the scale factor.
+      const currentScale = yesScale || 1;
+      const btnWidth = (btnRef.current ? btnRef.current.offsetWidth : 150) * currentScale;
+      const btnHeight = (btnRef.current ? btnRef.current.offsetHeight : 60) * currentScale;
 
-      // Calculate safe area (padding 20px)
-      const maxX = window.innerWidth - btnWidth - 20;
-      const maxY = window.innerHeight - btnHeight - 20;
-      const minX = 20;
-      const minY = 20;
+      // Safety margin for notches and rounded corners
+      const margin = 50;
 
-      const x = Math.max(minX, Math.random() * maxX);
-      const y = Math.max(minY, Math.random() * maxY);
+      const maxX = window.innerWidth - btnWidth - margin;
+      const maxY = window.innerHeight - btnHeight - margin;
+      const minX = margin;
+      const minY = margin;
+
+      // Ensure we don't end up with negative ranges
+      const safeMaxX = Math.max(margin, maxX);
+      const safeMaxY = Math.max(margin, maxY);
+
+      const x = Math.max(minX, Math.random() * (safeMaxX - minX) + minX);
+      const y = Math.max(minY, Math.random() * (safeMaxY - minY) + minY);
 
       setPosition({ x, y });
       setYesDecor(emojis[newAttempts % emojis.length]);
@@ -222,6 +242,10 @@ export default function Home() {
 
   const handleNoClick = () => {
     playSound('no');
+
+    // Scale up the Yes button
+    setYesScale(prev => Math.min(prev + 0.2, 3)); // Max 3x size
+
     const noMessages = [
       "I think you meant to click Yes! 🤭",
       "Oops! Wrong button! 🙈",
@@ -229,14 +253,48 @@ export default function Home() {
       "Are you sure? Look again! 👀",
       "Just click Yes already! 💖",
       "My heart can't take this! 💔",
-      "Pretty please? 🥺👉👈"
+      "Pretty please? 🥺👉👈",
+      "Don't break my heart! 💔",
+      "Be nice! 🌹"
     ];
-    setMessage(noMessages[Math.floor(Math.random() * noMessages.length)]);
+    const newMsg = noMessages[Math.floor(Math.random() * noMessages.length)];
+
+    // Show as toast AND main message
+    setMessage(newMsg);
+    addToast(newMsg);
   };
 
   return (
     <main className="container" ref={containerRef}>
       <FloatingHearts />
+
+      {/* Toast Container */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        pointerEvents: 'none'
+      }}>
+        {toasts.map(toast => (
+          <div key={toast.id} style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            padding: '12px 24px',
+            borderRadius: '50px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            color: '#ff477e',
+            fontWeight: 'bold',
+            animation: 'float-up-fade 2s forwards',
+            whiteSpace: 'nowrap'
+          }}>
+            {toast.msg}
+          </div>
+        ))}
+      </div>
 
       {accepted ? (
         <div className="valentine-card animate-pulse" style={{ animationDuration: '3s' }}>
@@ -258,20 +316,21 @@ export default function Home() {
           <h1>Tapiwa, Will you be my Valentine?</h1>
 
           <div style={{
-            height: '40px',
+            minHeight: '40px',
             margin: '15px 0',
-            fontSize: '1.1rem',
+            fontSize: '1.3rem',
             fontWeight: 'bold',
-            color: 'var(--accent)',
+            color: '#e01b24', /* Darker readable red */
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            textShadow: '0 1px 2px rgba(255,255,255,0.8)'
           }}>
             {message || "Please? 🥺"}
           </div>
 
           {!accepted && (
-            <div style={{ marginBottom: '20px', fontSize: '1rem', color: '#aaa', letterSpacing: '2px' }}>
+            <div style={{ marginBottom: '20px', fontSize: '1rem', color: '#888', letterSpacing: '2px' }}>
               {attempts < maxAttempts ? 'Patience:' : 'Patience:'} {'💫'.repeat(patience)}
               {patience === 0 && <span style={{ opacity: 0.5 }}>EMPTY</span>}
             </div>
@@ -292,12 +351,13 @@ export default function Home() {
                     left: position.x + 'px',
                     top: position.y + 'px',
                     zIndex: 100,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                    transform: `scale(${yesScale})`
                   }
-                  : {}
+                  : { transform: `scale(${yesScale})` }
               }
               onMouseEnter={handleInteraction}
-              onTouchStart={handleInteraction} // Better for mobile "hover"
+              onTouchStart={handleInteraction}
               onClick={handleYesClick}
             >
               Yes {yesDecor}

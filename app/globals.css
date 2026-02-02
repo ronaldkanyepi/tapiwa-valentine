@@ -221,21 +221,50 @@ button {
 /* Mobile Responsiveness */
 @media (max-width: 600px) {
   h1 {
-    font-size: 2rem;
-    /* precise control */
+    font-size: 1.8rem;
+    /* Scaled down further for small screens */
   }
 
   .valentine-card {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1rem;
     width: 95%;
   }
 
   .btn {
-    padding: 12px 24px;
-    font-size: 1rem;
+    padding: 12px 20px;
+    font-size: 0.95rem;
   }
 
   .btn-group {
     gap: 10px;
+    flex-direction: column-reverse;
+    /* Put Yes on top/easy reach, or bottom? Column might save width */
+    /* Actually side-by-side matches the "chase" better usually, let's keep it row but wrap if needed */
+    flex-wrap: wrap;
+    flex-direction: row;
+  }
+}
+
+@media (max-height: 700px) {
+
+  /* Handle short screens/landscape mobile */
+  .container {
+    padding: 0.5rem;
+    justify-content: center;
+  }
+
+  .valentine-card {
+    padding: 1.5rem;
+  }
+
+  .animate-float {
+    /* Reduce movement on small screens to save space */
+    animation: none;
+    margin-bottom: 5px !important;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.2rem;
   }
 }
