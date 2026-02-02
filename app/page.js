@@ -45,6 +45,7 @@ export default function Home() {
   const [isMoving, setIsMoving] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [accepted, setAccepted] = useState(false);
+  const [showDedication, setShowDedication] = useState(false);
   const [message, setMessage] = useState('');
   // New states
   const [toasts, setToasts] = useState([]);
@@ -251,8 +252,10 @@ export default function Home() {
   const handleNoClick = () => {
     playSound('no');
 
-    // Scale up the Yes button
-    setYesScale(prev => Math.min(prev + 0.2, 3)); // Max 3x size
+    // Scale up the Yes button, but cap it reasonable
+    // Mobile: max 1.3 (smaller cap), Desktop: max 1.7
+    const maxScale = isMobile ? 1.3 : 1.7;
+    setYesScale(prev => Math.min(prev + 0.1, maxScale));
 
     const noMessages = [
       "I think you meant to click Yes! 🤭",
@@ -267,8 +270,7 @@ export default function Home() {
     ];
     const newMsg = noMessages[Math.floor(Math.random() * noMessages.length)];
 
-    // Show as toast AND main message
-    setMessage(newMsg);
+    // Show ONLY as toast (pop-up) as requested
     addToast(newMsg);
   };
 
@@ -304,7 +306,7 @@ export default function Home() {
         ))}
       </div>
 
-      {accepted ? (
+      {accepted && !showDedication ? (
         <div className="valentine-card animate-pulse" style={{ animationDuration: '3s' }}>
           <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--primary)' }}>
             Hehe, I knew it! 🥰
@@ -312,8 +314,43 @@ export default function Home() {
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#555' }}>
             Why are you smiling then? 😂😂😂
           </p>
-          <div style={{ fontSize: '6rem', marginTop: '30px', animation: 'float 3s ease-in-out infinite' }}>
+          <div style={{ fontSize: '6rem', margin: '30px 0', animation: 'float 3s ease-in-out infinite' }}>
             💑
+          </div>
+
+          <button
+            className="btn btn-yes"
+            onClick={() => setShowDedication(true)}
+            style={{ marginTop: '20px', fontSize: '1rem', width: 'auto', padding: '15px 30px' }}
+          >
+            Click next, I promise I will be behaving babe 👉
+          </button>
+        </div>
+      ) : accepted && showDedication ? (
+        <div className="valentine-card" style={{ maxWidth: '600px' }}>
+          <div style={{ marginBottom: '20px', fontSize: '1.2rem', fontStyle: 'italic', lineHeight: '1.6', color: '#444' }}>
+            "Roses are blue,<br />
+            Violets are red,<br />
+            My legs are too long<br />
+            To fit in this bed.<br /><br />
+            I love you Tapiwa! My English has officially left the building, so you’re in charge of fixing this mess while I go suffer in this 8:30 AM banking training. 🏃‍♂️💨"
+          </div>
+
+          <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.5)', borderRadius: '15px' }}>
+            <p style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#e01b24', fontWeight: 'bold' }}>
+              Now play the song I'm dedicating for you today 🎶
+            </p>
+            <iframe
+              width="100%"
+              height="315"
+              src="https://www.youtube.com/embed/jVkHKsHsNrI"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              style={{ borderRadius: '10px', maxWidth: '100%' }}
+            ></iframe>
           </div>
         </div>
       ) : (
