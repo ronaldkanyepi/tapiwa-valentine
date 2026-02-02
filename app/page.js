@@ -1,66 +1,310 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import confetti from 'canvas-confetti';
+
+const FloatingHearts = () => {
+  const [hearts, setHearts] = useState([]);
+
+  useEffect(() => {
+    // Generate static hearts for background
+    const newHearts = Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100 + '%',
+      animationDuration: Math.random() * 10 + 10 + 's',
+      animationDelay: Math.random() * 10 + 's',
+      fontSize: Math.random() * 20 + 10 + 'px',
+      opacity: Math.random() * 0.5 + 0.1
+    }));
+    setHearts(newHearts);
+  }, []);
+
+  return (
+    <div className="bg-hearts">
+      {hearts.map(heart => (
+        <div
+          key={heart.id}
+          className="floating-heart"
+          style={{
+            left: heart.left,
+            animationDuration: heart.animationDuration,
+            animationDelay: heart.animationDelay,
+            fontSize: heart.fontSize,
+            opacity: heart.opacity
+          }}
+        >
+          {['❤️', '💖', '💕', '🌸', '✨'][Math.floor(Math.random() * 5)]}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function Home() {
+  const [yesDecor, setYesDecor] = useState('💖');
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isMoving, setIsMoving] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [accepted, setAccepted] = useState(false);
+  const [message, setMessage] = useState('');
+  const [patience, setPatience] = useState(5);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const containerRef = useRef(null);
+  const btnRef = useRef(null);
+
+  const maxAttempts = 6;
+
+  const teasers = [
+    "Nice try, Tapiwa! 😏",
+    "Too slow! 🐢",
+    "Gotta be faster! 💨",
+    "You thought! 😂",
+    "Catch me if you can! 💅",
+    "Almost had it! 🤏",
+    "Not today! 🤪",
+    "Keep chasing! 🏃‍♀️",
+    "Nope! 😋"
+  ];
+
+  const emojis = ['💖', '💘', '💌', '🥰', '💕', '💓'];
+
+  // Sound Effects using Web Audio API
+  const playSound = (type) => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+
+      const ctx = new AudioContext();
+
+      const playTone = (freq, type, duration, delay = 0) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration);
+      };
+
+      if (type === 'move') {
+        // Swoosh/Pop
+        playTone(600, 'sine', 0.1);
+        playTone(400, 'triangle', 0.1, 0.05);
+      } else if (type === 'no') {
+        // Bonk
+        playTone(150, 'sawtooth', 0.1);
+        playTone(100, 'sawtooth', 0.2, 0.1);
+      } else if (type === 'win') {
+        // Tada / Chime
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { // C Major
+          playTone(freq, 'sine', 0.6, i * 0.1);
+        });
+      }
+    } catch (e) {
+      console.error("Audio error", e);
+    }
+  };
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const moveButton = useCallback(() => {
+    if (accepted) return;
+
+    // Play sound
+    playSound('move');
+
+    if (attempts < maxAttempts) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      setPatience(Math.max(0, 5 - Math.floor(newAttempts * (5 / maxAttempts))));
+
+      setIsMoving(true);
+
+      // Smart positioning: avoid edges
+      const btnWidth = btnRef.current ? btnRef.current.offsetWidth : 150;
+      const btnHeight = btnRef.current ? btnRef.current.offsetHeight : 60;
+
+      // Calculate safe area (padding 20px)
+      const maxX = window.innerWidth - btnWidth - 20;
+      const maxY = window.innerHeight - btnHeight - 20;
+      const minX = 20;
+      const minY = 20;
+
+      const x = Math.max(minX, Math.random() * maxX);
+      const y = Math.max(minY, Math.random() * maxY);
+
+      setPosition({ x, y });
+      setYesDecor(emojis[newAttempts % emojis.length]);
+      setMessage(teasers[newAttempts % teasers.length]);
+
+    } else {
+      setIsMoving(false);
+      setMessage("Okay okay, I give up! 🥰");
+    }
+  }, [attempts, accepted]);
+
+  const handleInteraction = (e) => {
+    // Only dodge if we haven't accepted yet
+    if (accepted || attempts >= maxAttempts) return;
+
+    // Check if it's touch or mouse
+    if (e.type === 'touchstart') {
+      // On mobile, we want to dodge on touch, but we need to prevent the click momentarily
+      // But if we move it, the click won't register on the new location anyway usually
+      moveButton();
+    } else {
+      // Mouse hover
+      moveButton();
+    }
+  };
+
+  const handleYesClick = () => {
+    // Determine if we should allow the click
+    // If it's stopped moving (max attempts reached), allow it.
+    // OR if the user is just incredibly fast/lucky (we can be nice).
+
+    // Force move if they try to click before ready?
+    // Let's be playful: 
+    if (attempts < maxAttempts) {
+      // If they managed to click it while moving, let them win? 
+      // Or move it one last time?
+      // Let's be strict but fair: 50% chance to slip away if clicked too early
+      if (Math.random() > 0.5) {
+        moveButton();
+        return;
+      }
+    }
+
+    playSound('win');
+    setAccepted(true);
+    triggerConfetti();
+    setMessage("Finally... my Valentine! 💌");
+    setYesDecor("💑");
+    setIsMoving(false);
+  };
+
+  const triggerConfetti = () => {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(function () {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      confetti({
+        ...defaults, particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults, particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  };
+
+  const handleNoClick = () => {
+    playSound('no');
+    const noMessages = [
+      "I think you meant to click Yes! 🤭",
+      "Oops! Wrong button! 🙈",
+      "But I promise I'm nice! 🥺",
+      "Are you sure? Look again! 👀",
+      "Just click Yes already! 💖",
+      "My heart can't take this! 💔",
+      "Pretty please? 🥺👉👈"
+    ];
+    setMessage(noMessages[Math.floor(Math.random() * noMessages.length)]);
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="container" ref={containerRef}>
+      <FloatingHearts />
+
+      {accepted ? (
+        <div className="valentine-card animate-pulse" style={{ animationDuration: '3s' }}>
+          <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--primary)' }}>
+            Hehe, I knew it! 🥰
+          </h1>
+          <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#555' }}>
+            Why are you smiling then? 😂😂😂
           </p>
+          <div style={{ fontSize: '6rem', marginTop: '30px', animation: 'float 3s ease-in-out infinite' }}>
+            💑
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      ) : (
+        <div className="valentine-card">
+          <div style={{ fontSize: '5rem', marginBottom: '10px' }} className="animate-float">
+            💘
+          </div>
+          <h1>Tapiwa, Will you be my Valentine?</h1>
+
+          <div style={{
+            height: '40px',
+            margin: '15px 0',
+            fontSize: '1.1rem',
+            fontWeight: 'bold',
+            color: 'var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {message || "Please? 🥺"}
+          </div>
+
+          {!accepted && (
+            <div style={{ marginBottom: '20px', fontSize: '1rem', color: '#aaa', letterSpacing: '2px' }}>
+              {attempts < maxAttempts ? 'Patience:' : 'Patience:'} {'💫'.repeat(patience)}
+              {patience === 0 && <span style={{ opacity: 0.5 }}>EMPTY</span>}
+            </div>
+          )}
+
+          <div className="btn-group">
+            <button className="btn btn-no" onClick={handleNoClick}>
+              No ❌
+            </button>
+
+            <button
+              ref={btnRef}
+              className="btn btn-yes"
+              style={
+                isMoving && attempts < maxAttempts
+                  ? {
+                    position: 'fixed',
+                    left: position.x + 'px',
+                    top: position.y + 'px',
+                    zIndex: 100,
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                  }
+                  : {}
+              }
+              onMouseEnter={handleInteraction}
+              onTouchStart={handleInteraction} // Better for mobile "hover"
+              onClick={handleYesClick}
+            >
+              Yes {yesDecor}
+            </button>
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+    </main>
   );
 }

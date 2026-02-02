@@ -1,42 +1,241 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffe4e6;
+  --foreground: #4a4a4a;
+  --primary: #ff477e;
+  /* More vibrant pink */
+  --primary-hover: #ff0a54;
+  --secondary: #ffccd5;
+  --accent: #ff8fa3;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --white: #ffffff;
+
+  --font-heading: var(--font-pacifico), cursive;
+  --font-body: var(--font-fredoka), sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  /* Animated gradient background */
+  background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #ffd1ff, #fbc2eb);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+  color: var(--foreground);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Prevent scrollbars from moving button */
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
   }
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+h1 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  color: var(--primary);
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+h1,
+h2,
+h3,
+p {
+  cursor: default;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+@keyframes pulse-heart {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translateY(-20vh) scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse {
+  animation: pulse-heart 2s infinite;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+}
+
+.valentine-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 3rem 2rem;
+  border-radius: 30px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 10px 20px rgba(255, 105, 180, 0.15);
+  /* Soft pink glow */
+  max-width: 550px;
+  width: 90%;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  z-index: 20;
+}
+
+.valentine-card:hover {
+  transform: translateY(-5px);
+}
+
+.btn-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2.5rem;
+  min-height: 60px;
+  flex-wrap: wrap;
+  /* Safety for very small screens */
+}
+
+.btn {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  border-radius: 50px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-yes {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border: 2px solid transparent;
+}
+
+.btn-yes:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 25px rgba(255, 71, 126, 0.5);
+}
+
+.btn-no {
+  background: #ffffff;
+  color: #888;
+  border: 2px solid #ddd;
+}
+
+.btn-no:hover {
+  background: #f8f8f8;
+  color: #555;
+  border-color: #ccc;
+}
+
+/* Background Hearts */
+.bg-hearts {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.floating-heart {
+  position: absolute;
+  bottom: -20px;
+  animation: float-up 15s linear infinite;
+  opacity: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+  h1 {
+    font-size: 2rem;
+    /* precise control */
+  }
+
+  .valentine-card {
+    padding: 2rem 1.5rem;
+    width: 95%;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  .btn-group {
+    gap: 10px;
   }
 }
