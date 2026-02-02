@@ -154,23 +154,22 @@ export default function Home() {
       const btnWidth = baseWidth * currentScale;
       const btnHeight = baseHeight * currentScale;
 
-      // Safety margin for notches and rounded corners
-      const margin = 20;
+      // Safety margin for notches, rounded corners, and mobile browser bars
+      const marginX = 20;
+      // Much larger bottom margin for mobile to handle bottom navigation bars
+      const marginY = isMobile ? 150 : 20;
 
-      // Use window dimensions but subtract button size AND margin
-      const maxX = window.innerWidth - btnWidth - margin;
-      const maxY = window.innerHeight - btnHeight - margin;
-      const minX = margin;
-      const minY = margin;
+      // Ensure we don't end up with negative ranges
+      const maxPossibleX = window.innerWidth - btnWidth - marginX;
+      // Extra safety: cap Y at 85% of screen height
+      const maxPossibleY = Math.min(window.innerHeight - btnHeight - marginY, window.innerHeight * 0.85);
 
-      // Ensure we don't end up with negative ranges (which would push it offscreen)
-      // If the button is wider than the screen (due to massive scale), clamp to 0 or center?
-      // Let's clamp to safe area.
-      const safeMaxX = Math.max(minX, maxX);
-      const safeMaxY = Math.max(minY, maxY);
+      const safeMaxX = Math.max(marginX, maxPossibleX);
+      const safeMaxY = Math.max(marginY, maxPossibleY);
 
-      const x = Math.random() * (safeMaxX - minX) + minX;
-      const y = Math.random() * (safeMaxY - minY) + minY;
+      // Generate random position within safe bounds
+      const x = Math.random() * (safeMaxX - marginX) + marginX;
+      const y = Math.random() * (safeMaxY - marginY) + marginY;
 
       setPosition({ x, y });
       setYesDecor(emojis[newAttempts % emojis.length]);
