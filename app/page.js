@@ -146,23 +146,30 @@ export default function Home() {
       // Smart positioning: avoid edges and account for scale
       // Note: offsetWidth is unscaled. We need to account for the scale factor.
       const currentScale = yesScale || 1;
-      const btnWidth = (btnRef.current ? btnRef.current.offsetWidth : 150) * currentScale;
-      const btnHeight = (btnRef.current ? btnRef.current.offsetHeight : 60) * currentScale;
+      // Approximate width/height if ref is missing
+      const baseWidth = btnRef.current ? btnRef.current.offsetWidth : 120;
+      const baseHeight = btnRef.current ? btnRef.current.offsetHeight : 50;
+
+      const btnWidth = baseWidth * currentScale;
+      const btnHeight = baseHeight * currentScale;
 
       // Safety margin for notches and rounded corners
-      const margin = 50;
+      const margin = 20;
 
+      // Use window dimensions but subtract button size AND margin
       const maxX = window.innerWidth - btnWidth - margin;
       const maxY = window.innerHeight - btnHeight - margin;
       const minX = margin;
       const minY = margin;
 
-      // Ensure we don't end up with negative ranges
-      const safeMaxX = Math.max(margin, maxX);
-      const safeMaxY = Math.max(margin, maxY);
+      // Ensure we don't end up with negative ranges (which would push it offscreen)
+      // If the button is wider than the screen (due to massive scale), clamp to 0 or center?
+      // Let's clamp to safe area.
+      const safeMaxX = Math.max(minX, maxX);
+      const safeMaxY = Math.max(minY, maxY);
 
-      const x = Math.max(minX, Math.random() * (safeMaxX - minX) + minX);
-      const y = Math.max(minY, Math.random() * (safeMaxY - minY) + minY);
+      const x = Math.random() * (safeMaxX - minX) + minX;
+      const y = Math.random() * (safeMaxY - minY) + minY;
 
       setPosition({ x, y });
       setYesDecor(emojis[newAttempts % emojis.length]);
@@ -180,8 +187,9 @@ export default function Home() {
 
     // Check if it's touch or mouse
     if (e.type === 'touchstart') {
-      // On mobile, we want to dodge on touch, but we need to prevent the click momentarily
-      // But if we move it, the click won't register on the new location anyway usually
+      // Prevent default to stop the click event from firing immediately (scrolling/zooming might be affected but for a button it's fine)
+      // This ensures the button moves BEFORE 'click' can happen
+      e.preventDefault();
       moveButton();
     } else {
       // Mouse hover
